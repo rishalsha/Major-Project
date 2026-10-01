@@ -10,7 +10,7 @@ load_dotenv()
 class CandidateRankingAgent:
     def __init__(self):
         self.client = get_gemini_client()
-        self.model = get_gemini_model("gemini-2.0-flash")
+        self.model = get_gemini_model("gemini-3.8-flash")
         print("✅ Candidate Ranking Agent configured with Gemini semantic analysis.")
     
     def rank_candidates(self, ranking_input: Dict) -> Optional[Dict]:

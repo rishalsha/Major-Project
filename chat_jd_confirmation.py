@@ -38,7 +38,7 @@ class JDConfirmationChat:
             raise ValueError("GEMINI_API_KEY not found")
 
         self.client = get_gemini_client()
-        self.model = get_gemini_model("gemini-2.0-flash")
+        self.model = get_gemini_model("gemini-3.8-flash")
         
         # Chat state
         self.state = ChatState.GREETING

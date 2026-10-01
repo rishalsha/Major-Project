@@ -39,7 +39,7 @@ def get_gemini_api_key() -> Optional[str]:
     return key
 
 
-def get_gemini_model(default: str = "gemini-2.0-flash") -> str:
+def get_gemini_model(default: str = "gemini-3.8-flash") -> str:
     """Retrieve Gemini model name from environment or fallback default"""
     return os.getenv('GEMINI_MODEL') or os.getenv('GOOGLE_MODEL') or default
 

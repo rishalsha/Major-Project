@@ -23,7 +23,7 @@ class SemanticJDAnalyzer:
                 "GEMINI_API_KEY not found. Please create a .env file with: "
                 "GEMINI_API_KEY=your_key_here"
             )
-        self.model = get_gemini_model("gemini-2.0-flash")
+        self.model = get_gemini_model("gemini-3.8-flash")
         self.client = get_gemini_client()
 
     # ================================================================

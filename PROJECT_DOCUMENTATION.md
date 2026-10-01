@@ -4,7 +4,7 @@
 **HireIQ** ("Smart Hiring, Zero Effort") is an automated, AI-driven recruitment platform. It leverages **LangGraph**, **Streamlit**, and **Gemini models** to perform end-to-end recruitment workflows:
 - Conversational Job Description (JD) parsing & confirmation.
 - Bulk resume parsing & qualification screening.
-- Automated technical background verification using headless browser agents (`browser-use`).
+- Automated technical background verification using the public GitHub API.
 - Multi-factor semantic scoring & candidate ranking using Chain-of-Thought (CoT) reasoning.
 - Calendar availability parsing (`iCal`/Google Calendar) and rank-prioritized interview scheduling.
 - Automated SMTP notification & interview invitation emails.
@@ -26,16 +26,16 @@ HireIQ/
 │   ├── calendar_config.json        # iCal scheduling preferences (timezones, durations, buffer times)
 │   └── smtp_config.json            # SMTP server configurations for sending emails
 └── src/
-    ├── agents/
-    │   ├── resume_screener.py      # Resumes screening against JD criteria
-    │   ├── background_analyzer.py  # Browser-based verification (GitHub profiles, repos, followers)
-    │   ├── candidate_ranker.py     # Multi-criteria semantic scoring & candidate ranking
-    │   ├── calendar_scheduling_agent.py # iCal calendar slot search & rank-based allocation
-    │   └── communication_agent.py  # Real SMTP email invitation dispatcher
-    └── utils/
-        ├── file_parser.py          # PDF and DOCX text extraction utilities
-        ├── jd_analyzer.py          # Semantic LLM JD parser & workflow reasoner
-      └── llm_helper.py          # Native Gemini API helper, JSON cleaner, and prompt helpers
+   ├── agents/
+   │   ├── resume_screener.py      # Resumes screening against JD criteria
+   │   ├── background_analyzer.py  # GitHub API-based verification (profiles, repos, followers)
+   │   ├── candidate_ranker.py     # Multi-criteria semantic scoring & candidate ranking
+   │   ├── calendar_scheduling_agent.py # iCal calendar slot search & rank-based allocation
+   │   └── communication_agent.py  # Real SMTP email invitation dispatcher
+   └── utils/
+      ├── file_parser.py          # PDF and DOCX text extraction utilities
+      ├── jd_analyzer.py          # Semantic LLM JD parser & workflow reasoner
+      └── llm_helper.py           # Native Gemini API helper, JSON cleaner, and prompt helpers
 ```
 
 ---
@@ -44,7 +44,7 @@ HireIQ/
 
 - **Framework / UI**: Streamlit (`streamlit>=1.28.0`)
 - **Orchestration**: LangGraph (`langgraph`, `langchain`)
-- **LLM & Agents**: Native Gemini API (`gemini-2.0-flash`), GitHub API verification, `requests`
+- **LLM & Agents**: Native Gemini API (`gemini-3.8-flash`), GitHub API verification, `requests`
 - **Database**: SQLite3 (`recruitment.db`), `bcrypt>=4.0.0`
 - **Document Processing**: `PyPDF2`, `pdfplumber`, `python-docx`
 - **Calendar & Time**: `icalendar`, `pytz`
@@ -157,7 +157,12 @@ class RecruitmentState(TypedDict):
 - Extracts GitHub usernames from resumes or candidate metadata.
 - Combines GitHub signals with LinkedIn presence to compute verification scores.
 
-### D. Candidate Ranker Agent (`src/agents/candidate_ranker.py`)
+### D. Gemini LLM Helper (`src/utils/llm_helper.py`)
+- Provides the native Gemini REST client wrapper used by screening, JD extraction, and ranking.
+- Handles `.env` loading for `GEMINI_API_KEY`, `GEMINI_MODEL`, and `GEMINI_BASE_URL`.
+- Converts chat-style prompts into Gemini `generateContent` requests and normalizes JSON responses.
+
+### E. Candidate Ranker Agent (`src/agents/candidate_ranker.py`)
 - Computes four weighted sub-scores:
   1. `resume_score`: Base candidate eligibility score.
   2. `verification_score`: GitHub / web audit score.
@@ -165,12 +170,12 @@ class RecruitmentState(TypedDict):
   4. `experience_semantic`: LLM experience fit against JD expectations.
 - Calculates `comprehensive_score` and sorts candidates descending to compute numerical `rank` (1 = Top Candidate).
 
-### E. Calendar Scheduling Agent (`src/agents/calendar_scheduling_agent.py`)
+### F. Calendar Scheduling Agent (`src/agents/calendar_scheduling_agent.py`)
 - Fetches and parses iCal URLs (`.ics`).
 - Respects recruiter configuration: working hours (e.g., 09:00 - 18:00), working days (Mon-Fri), timezone (e.g. `Asia/Kolkata`), interview duration (60 min), and buffer time (15 min).
 - Priority Scheduling Algorithm: Candidate with Rank 1 gets the earliest available open slot on the recruiter's calendar.
 
-### F. Communication Agent (`src/agents/communication_agent.py`)
+### G. Communication Agent (`src/agents/communication_agent.py`)
 - Connects via standard Python `smtplib` using SSL/TLS.
 - Renders template variables (`{candidate_name}`, `{job_title}`, `{interview_date}`, `{interview_time}`, `{meeting_link}`).
 - Supports sending both real emails and simulated dry-run tests.
@@ -211,6 +216,7 @@ class RecruitmentState(TypedDict):
    Ensure `.env` contains:
    ```env
    GEMINI_API_KEY=your_gemini_api_key
+   GEMINI_MODEL=gemini-3.8-flash
    ```
 2. **Install Dependencies**:
    ```bash

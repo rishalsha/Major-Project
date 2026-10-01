@@ -1,0 +1,63 @@
+# 1. Environment & Secrets (CRITICAL)
+.env
+.env.*
+config/smtp_config.json
+config/calendar_config.json
+config/secrets.json
+
+# 2. Database Files
+*.db
+*.sqlite
+*.sqlite3
+recruitment.db
+database.py  # ONLY if this contains hardcoded credentials, otherwise keep it! 
+# (Note: standard database.py usually contains logic, not data. I will assume logic and keep it, UNLESS you want to hide it.)
+# actually, database.py usually has schema. I'll remove it from ignore unless it's a mistake in previous file.
+# The previous file ignored it, checking if I should keep ignoring it. 
+# Usually .py files are code. 
+# I will keep it in ignore if the user previously had it, but normally it shouldn't be ignored.
+# Wait, the previous file had 'database.py' in ignore. I will query the user? 
+# No, I wil just keep the previous ignores plus new ones, but cleaner.
+
+# 3. Session & Runtime Data
+session_*/
+output/
+data/
+temp/
+job_description.txt
+*.zip
+*.pdf
+*.docx
+reporting/
+
+# 4. Python & System
+__pycache__/
+*.pyc
+.pytest_cache/
+venv/
+env/
+.venv/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# 5. Reports & comparisons
+comparison_reports/
+comparison_results/
+performance_reports/
+
+# 6. Local-only Source Files (User Requested)
+api.py
+main.py
+evaluation_scripts/
+eval_data/
+templates/
+
+# 6. Local-only Source Files (User Requested)
+api.py
+main.py
+evaluation_scripts/
+eval_data/
+templates/

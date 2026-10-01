@@ -7,8 +7,8 @@ import os
 import json
 import re
 from typing import Dict, List, Optional
-from openai import OpenAI
 from dotenv import load_dotenv
+from src.utils.llm_helper import get_gemini_client, get_gemini_model, get_gemini_api_key
 
 load_dotenv()
 
@@ -17,35 +17,14 @@ class SemanticJDAnalyzer:
     """Analyzes job descriptions using LLM with Chain-of-Thought"""
     
     def __init__(self):
-        # Get API key from environment
-        api_key = os.getenv('OPENAI_API_KEY')
-        
-        if not api_key:
-            api_key = self._load_key_from_env_file()
-        
-        if not api_key:
+        self.api_key = get_gemini_api_key()
+        if not self.api_key:
             raise ValueError(
-                "OPENAI_API_KEY not found. Please create a .env file with: "
-                "OPENAI_API_KEY=your_key_here"
+                "GEMINI_API_KEY not found. Please create a .env file with: "
+                "GEMINI_API_KEY=your_key_here"
             )
-        
-        # FIX: Set environment variable and initialize WITHOUT parameters
-        os.environ['OPENAI_API_KEY'] = api_key
-        self.client = OpenAI()  # Uses environment variable automatically
-        self.model = "gpt-3.5-turbo"
-    
-    def _load_key_from_env_file(self) -> str:
-        """Try to load API key from .env file directly"""
-        try:
-            if os.path.exists('.env'):
-                with open('.env', 'r') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith('#') and 'OPENAI_API_KEY=' in line:
-                            return line.split('=', 1)[1].strip()
-        except Exception as e:
-            print(f"⚠️ Error reading .env file: {e}")
-        return None
+        self.model = get_gemini_model("gemini-2.0-flash")
+        self.client = get_gemini_client()
 
     # ================================================================
     # EXTRACTION FUNCTIONS (for chat confirmation)
@@ -232,7 +211,7 @@ class SemanticJDAnalyzer:
             """
             
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a senior recruitment orchestrator. Analyze the JD deeply to determine the optimized workflow. Focus on implicit cues for trust and verification requirements."},
                     {"role": "user", "content": prompt}

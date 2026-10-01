@@ -1,7 +1,7 @@
 # 🤖 HireIQ - Comprehensive System Architecture & AI Developer Guide
 
 ## 1. Executive Summary & Purpose
-**HireIQ** ("Smart Hiring, Zero Effort") is an automated, AI-driven recruitment platform. It leverages **LangGraph**, **Streamlit**, and **OpenAI GPT models** to perform end-to-end recruitment workflows:
+**HireIQ** ("Smart Hiring, Zero Effort") is an automated, AI-driven recruitment platform. It leverages **LangGraph**, **Streamlit**, and **Gemini models** to perform end-to-end recruitment workflows:
 - Conversational Job Description (JD) parsing & confirmation.
 - Bulk resume parsing & qualification screening.
 - Automated technical background verification using headless browser agents (`browser-use`).
@@ -19,7 +19,7 @@ HireIQ/
 ├── chat_jd_confirmation.py         # Chat-based state machine for interactive JD detail confirmation
 ├── orchestration.py                 # LangGraph dynamic workflow definition & node execution
 ├── database.py                     # SQLite database management, schemas, bcrypt auth, session queries
-├── requirements.txt                # Project dependencies (Streamlit, OpenAI, LangGraph, PyPDF2, etc.)
+├── requirements.txt                # Project dependencies (Streamlit, Gemini client, LangGraph, PyPDF2, etc.)
 ├── config/
 │   ├── workflow_config.py          # Dataclasses & enums for workflow pipeline configurations
 │   ├── email_templates.json        # HTML/Text email templates for in-person and online interviews
@@ -35,7 +35,7 @@ HireIQ/
     └── utils/
         ├── file_parser.py          # PDF and DOCX text extraction utilities
         ├── jd_analyzer.py          # Semantic LLM JD parser & workflow reasoner
-        └── llm_helper.py          # OpenAI API wrapper, JSON cleaner, and prompt helpers
+      └── llm_helper.py          # Native Gemini API helper, JSON cleaner, and prompt helpers
 ```
 
 ---
@@ -43,8 +43,8 @@ HireIQ/
 ## 3. Technology Stack & Key Dependencies
 
 - **Framework / UI**: Streamlit (`streamlit>=1.28.0`)
-- **Orchestration**: LangGraph (`langgraph`, `langchain`, `langchain_openai`)
-- **LLM & Agents**: OpenAI API (`openai==1.12.0`, `gpt-3.5-turbo`, `gpt-4o-mini`), Browser Automation Agent (`browser-use`)
+- **Orchestration**: LangGraph (`langgraph`, `langchain`)
+- **LLM & Agents**: Native Gemini API (`gemini-2.0-flash`), GitHub API verification, `requests`
 - **Database**: SQLite3 (`recruitment.db`), `bcrypt>=4.0.0`
 - **Document Processing**: `PyPDF2`, `pdfplumber`, `python-docx`
 - **Calendar & Time**: `icalendar`, `pytz`
@@ -153,9 +153,9 @@ class RecruitmentState(TypedDict):
 - Returns eligibility status, reason, extracted email/phone, and profile links (GitHub, LinkedIn).
 
 ### C. Background Verifier Local Agent (`src/agents/background_analyzer.py`)
-- Utilizes `browser-use` `Agent(task=..., llm=ChatOpenAI(model="gpt-4o-mini"))`.
+- Uses the public GitHub API to verify profile activity and repository metadata.
 - Extracts GitHub usernames from resumes or candidate metadata.
-- Navigates to candidate GitHub profiles, extracts repo count, followers, and primary programming languages, returning verified scores.
+- Combines GitHub signals with LinkedIn presence to compute verification scores.
 
 ### D. Candidate Ranker Agent (`src/agents/candidate_ranker.py`)
 - Computes four weighted sub-scores:
@@ -210,7 +210,7 @@ class RecruitmentState(TypedDict):
 1. **Environment Setup**:
    Ensure `.env` contains:
    ```env
-   OPENAI_API_KEY=your_openai_api_key
+   GEMINI_API_KEY=your_gemini_api_key
    ```
 2. **Install Dependencies**:
    ```bash

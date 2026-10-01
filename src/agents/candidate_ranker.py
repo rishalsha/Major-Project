@@ -1,16 +1,17 @@
 import json
 import os
 from typing import Dict, List, Optional
-from openai import OpenAI
 from dotenv import load_dotenv
+
+from src.utils.llm_helper import get_gemini_client, get_gemini_model
 
 load_dotenv()
 
 class CandidateRankingAgent:
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        self.model = "gpt-3.5-turbo"
-        print("✅ Candidate Ranking Agent configured with semantic analysis.")
+        self.client = get_gemini_client()
+        self.model = get_gemini_model("gemini-2.0-flash")
+        print("✅ Candidate Ranking Agent configured with Gemini semantic analysis.")
     
     def rank_candidates(self, ranking_input: Dict) -> Optional[Dict]:
         """

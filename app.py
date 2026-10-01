@@ -360,12 +360,13 @@ def extract_text_from_docx(file):
 
 def extract_text_from_image_with_vision(image_file) -> str:
     """
-    Extract text from image using OpenAI Vision API
+    Extract text from image using Gemini Vision
     Handles quoted API keys in .env file
     """
     import base64
     import os
     import re
+    from src.utils.llm_helper import get_gemini_api_key, get_gemini_client
     
     try:
         print("🖼️ Starting Vision AI extraction...")
@@ -375,87 +376,17 @@ def extract_text_from_image_with_vision(image_file) -> str:
         os.environ.pop('HTTPS_PROXY', None)
         os.environ.pop('ALL_PROXY', None)
         
-        # STEP 2: Load API key from .env file, handling quotes properly
-        api_key = None
-        
-        if os.path.exists('.env'):
-            print("📁 Found .env file, reading API key...")
-            
-            # Read the entire file content
-            with open('.env', 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            # Find API key using regex that handles quotes and various formats
-            patterns = [
-                r'OPENAI_API_KEY\s*=\s*["\'](.+?)["\']',  # With quotes
-                r'OPENAI_API_KEY\s*=\s*(.+?)\s*(?:#.*)?$',  # Without quotes (end of line)
-                r'OPENAI_API_KEY\s*:\s*["\'](.+?)["\']',  # With colon separator
-                r'OPENAI_API_KEY\s*:\s*(.+?)\s*(?:#.*)?$'   # With colon, no quotes
-            ]
-            
-            for pattern in patterns:
-                match = re.search(pattern, content, re.MULTILINE | re.IGNORECASE)
-                if match:
-                    api_key = match.group(1).strip()
-                    print(f"✅ Found API key using pattern: {pattern[:30]}...")
-                    break
-        
-        # If not found via regex, try simple line-by-line parsing
-        if not api_key and os.path.exists('.env'):
-            with open('.env', 'r', encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith('#') and 'OPENAI_API_KEY' in line.upper():
-                        # Handle various formats
-                        if '=' in line:
-                            key_part = line.split('=', 1)[1].strip()
-                        elif ':' in line:
-                            key_part = line.split(':', 1)[1].strip()
-                        else:
-                            continue
-                        
-                        # Remove quotes if present
-                        api_key = key_part.strip('"\'')
-                        print("✅ Found API key via line parsing")
-                        break
-        
-        # Fallback to environment variable
+        # STEP 2: Load Gemini API key from environment or .env
+        api_key = get_gemini_api_key()
         if not api_key:
-            api_key = os.getenv('OPENAI_API_KEY')
-            if api_key:
-                # Clean quotes from env var too
-                api_key = api_key.strip('"\'')
-                print("✅ Using API key from environment variable")
-        
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY not found in .env file or environment")
-        
-        # Additional cleaning - remove any trailing/leading whitespace
-        api_key = api_key.strip()
-        
-        # Debug output (masked for security)
+            raise ValueError("GEMINI_API_KEY not found in .env file or environment")
+
         print(f"✅ API key length: {len(api_key)} characters")
         print(f"✅ API key starts with: {api_key[:12] if len(api_key) >= 12 else api_key}")
         print(f"✅ API key ends with: ...{api_key[-4:] if len(api_key) >= 4 else ''}")
-        
-        # Check if key still has quotes (shouldn't happen after our cleaning)
-        if api_key.startswith('"') or api_key.startswith("'"):
-            print("⚠️ Warning: API key still has leading quote")
-            api_key = api_key[1:]
-        if api_key.endswith('"') or api_key.endswith("'"):
-            print("⚠️ Warning: API key still has trailing quote")
-            api_key = api_key[:-1]
-        
-        # Final validation
-        api_key = api_key.strip()
-        if not api_key.startswith('sk-'):
-            print(f"⚠️ API key format warning: Doesn't start with 'sk-'. Starts with: '{api_key[:10]}'")
-        
-        # STEP 3: Import OpenAI and create client
-        import openai
-        
-        # Create client with the cleaned API key
-        client = openai.OpenAI(api_key=api_key)
+
+        # STEP 3: Create Gemini client
+        client = get_gemini_client()
         
         # STEP 4: Process the image
         image_bytes = image_file.read()
@@ -473,7 +404,7 @@ def extract_text_from_image_with_vision(image_file) -> str:
         
         # STEP 5: Call Vision API
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gemini-2.0-flash",
             messages=[
                 {
                     "role": "user",
@@ -510,7 +441,7 @@ def extract_text_from_image_with_vision(image_file) -> str:
         
         return extracted_text
         
-    except openai.AuthenticationError as auth_error:
+    except Exception as auth_error:
         print(f"❌ Authentication failed!")
         print(f"❌ Error message: {auth_error}")
         
@@ -518,7 +449,7 @@ def extract_text_from_image_with_vision(image_file) -> str:
         if 'api_key' in locals():
             print(f"🔍 DEBUG - API key used (first/last chars): {api_key[:12]}...{api_key[-4:]}")
         
-        raise Exception(f"Authentication failed. Please check your OpenAI API key format in .env file.")
+        raise Exception(f"Authentication failed. Please check your Gemini API key format in .env file.")
         
     except Exception as e:
         print(f"❌ Vision API error: {type(e).__name__}: {str(e)}")
@@ -531,7 +462,7 @@ def is_image_file(filename: str) -> bool:
 
 
 def validate_image_size(image_file, max_size_mb: int = 20) -> bool:
-    """Validate image file size (OpenAI limit is 20MB)"""
+    """Validate image file size (Gemini limit is 20MB)"""
     try:
         # Get file size
         image_file.seek(0, 2)  # Seek to end

@@ -7,9 +7,10 @@ import os
 import json
 import re
 from typing import Dict, List, Optional
-from openai import OpenAI
 from dotenv import load_dotenv
 from enum import Enum
+
+from src.utils.llm_helper import get_gemini_client, get_gemini_model, get_gemini_api_key
 
 load_dotenv()
 
@@ -32,16 +33,12 @@ class JDConfirmationChat:
     """Interactive chat system for JD confirmation"""
     
     def __init__(self):
-        api_key = os.getenv('OPENAI_API_KEY')
+        api_key = get_gemini_api_key()
         if not api_key:
-            api_key = self._load_key_from_env_file()
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY not found")
-        
-        # Set environment variable and initialize WITHOUT parameters
-        os.environ['OPENAI_API_KEY'] = api_key
-        self.client = OpenAI()  # Uses environment variable automatically
-        self.model = "gpt-3.5-turbo"
+            raise ValueError("GEMINI_API_KEY not found")
+
+        self.client = get_gemini_client()
+        self.model = get_gemini_model("gemini-2.0-flash")
         
         # Chat state
         self.state = ChatState.GREETING
@@ -53,16 +50,7 @@ class JDConfirmationChat:
     
     def _load_key_from_env_file(self) -> str:
         """Load API key from .env file"""
-        try:
-            if os.path.exists('.env'):
-                with open('.env', 'r') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith('#') and 'OPENAI_API_KEY=' in line:
-                            return line.split('=', 1)[1].strip()
-        except Exception as e:
-            print(f"⚠️ Error reading .env file: {e}")
-        return None
+        return get_gemini_api_key()
     
     def start_conversation(self, jd_text: str) -> str:
         """Start the conversation by extracting JD details"""
